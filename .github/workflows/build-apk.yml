@@ -24,16 +24,28 @@ jobs:
         with:
           node-version: '22'
 
+      - name: HTML'yi www klasörüne taşı
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
       - name: Capacitor Kur
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Capacitor Başlat
+      - name: capacitor.config.json oluştur
         run: |
-          npx cap init "Altın Portföy" "com.altinportfoy.app" --web-dir .
-        env:
-          CI: false
+          cat > capacitor.config.json << 'CAPEOF'
+          {
+            "appId": "com.altinportfoy.app",
+            "appName": "Altın Portföy",
+            "webDir": "www",
+            "server": {
+              "androidScheme": "https"
+            }
+          }
+          CAPEOF
 
       - name: Android Platform Ekle
         run: npx cap add android
@@ -48,8 +60,6 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME }}
 
       - name: APK'yı Artifact Olarak Yükle
         uses: actions/upload-artifact@v4
