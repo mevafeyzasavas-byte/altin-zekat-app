@@ -1336,7 +1336,7 @@ function durumGuncelle(durum, mesaj) {
     }
 }
 
-async function anlıkFiyatlariGetir() {
+async function anlikFiyatlariGetir() {
     durumGuncelle('loading', 'Fiyatlar alınıyor...');
     try {
         const data = await httpGet(PROXY_URL + '?t=' + Date.now());
@@ -1384,7 +1384,7 @@ function parseAPIResponse(data) {
     }
 }
 
-function fiyatlariYenile() { anlıkFiyatlariGetir(); }
+function fiyatlariYenile() { anlikFiyatlariGetir(); }
 setInterval(anlıkFiyatlariGetir, 600000);
 
 // ============================================================
@@ -1731,7 +1731,7 @@ document.addEventListener('keydown', function(e) {
 window.onload = async function() {
     durumGuncelle('loading', 'Yükleniyor...');
     await sunucudanVeriYukle();
-    anlıkFiyatlariGetir();
+    anlikFiyatlariGetir();
 };
 </script>
 </body>
