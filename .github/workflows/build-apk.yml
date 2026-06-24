@@ -29,10 +29,11 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
 
-      - name: Capacitor Kur
+      - name: Capacitor ve HTTP Plugin Kur
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor-community/http
 
       - name: capacitor.config.json oluştur
         run: |
@@ -46,6 +47,11 @@ jobs:
             },
             "android": {
               "allowMixedContent": true
+            },
+            "plugins": {
+              "Http": {
+                "enabled": true
+              }
             }
           }
           CAPEOF
@@ -75,35 +81,6 @@ jobs:
         run: |
           sed -i 's|<application|<application android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config"|' \
             android/app/src/main/AndroidManifest.xml
-          # INTERNET izni kontrol et
-          grep -q "INTERNET" android/app/src/main/AndroidManifest.xml || \
-            sed -i 's|</manifest>|    <uses-permission android:name="android.permission.INTERNET"/>\n</manifest>|' \
-            android/app/src/main/AndroidManifest.xml
-
-      - name: MainActivity'de mixed content aç
-        run: |
-          cat > android/app/src/main/java/com/altinportfoy/app/MainActivity.java << 'JAVAEOF'
-          package com.altinportfoy.app;
-          import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import com.getcapacitor.BridgeActivity;
-          public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-              }
-              @Override
-              protected void onStart() {
-                  super.onStart();
-                  WebView webView = getBridge().getWebView();
-                  WebSettings settings = webView.getSettings();
-                  settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-              }
-          }
-          JAVAEOF
 
       - name: Gradle İzni Ver
         run: chmod +x android/gradlew
