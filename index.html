@@ -1226,7 +1226,9 @@ async function sunucudanVeriYukle() {
     try {
         const response = await fetch(VERI_URL + '?t=' + Date.now(), {
             method: 'GET',
-            headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            mode: 'cors',
+            credentials: 'omit',
+            headers: { 'Accept': 'application/json' }
         });
         if (!response.ok) throw new Error('Sunucu yanıt vermedi');
         const data = await response.json();
@@ -1276,6 +1278,8 @@ async function sunucuyaVeriKaydet() {
 
         const response = await fetch(VERI_URL, {
             method: 'POST',
+            mode: 'cors',
+            credentials: 'omit',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()
         });
@@ -1307,12 +1311,17 @@ function durumGuncelle(durum, mesaj) {
 async function anlıkFiyatlariGetir() {
     durumGuncelle('loading', 'Fiyatlar alınıyor...');
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         const response = await fetch(PROXY_URL + '?t=' + Date.now(), {
             method: 'GET',
-            headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' },
+            mode: 'cors',
+            credentials: 'omit',
+            headers: { 'Accept': 'application/json' },
             cache: 'no-store',
-            signal: AbortSignal.timeout(10000)
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
         if (!response.ok) throw new Error(`HTTP hata: ${response.status}`);
 
         let responseText = await response.text();
@@ -1322,9 +1331,10 @@ async function anlıkFiyatlariGetir() {
         const data = JSON.parse(responseText);
         parseAPIResponse(data);
     } catch (error) {
-        console.error('API hatası:', error.message);
-        if (error.name === 'TimeoutError') durumGuncelle('offline', 'Zaman aşımı');
-        else durumGuncelle('offline', 'Hata');
+        console.error('API hatası:', error.message, error.name);
+        if (error.name === 'AbortError') durumGuncelle('offline', 'Zaman aşımı');
+        else if (error.name === 'TypeError') durumGuncelle('offline', 'Bağlantı yok');
+        else durumGuncelle('offline', error.message.substring(0, 20));
         ekraniGuncelle();
     }
 }
