@@ -1,0 +1,57 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu İndir
+        uses: actions/checkout@v4
+
+      - name: Java Kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Node.js Kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Capacitor Kur
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Capacitor Başlat
+        run: |
+          npx cap init "Altın Portföy" "com.altinportfoy.app" --web-dir .
+        env:
+          CI: false
+
+      - name: Android Platform Ekle
+        run: npx cap add android
+
+      - name: index.html'yi Android'e Kopyala
+        run: npx cap sync android
+
+      - name: Gradle İzni Ver
+        run: chmod +x android/gradlew
+
+      - name: APK Derle
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: APK'yı Artifact Olarak Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: altin-portfoy-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
