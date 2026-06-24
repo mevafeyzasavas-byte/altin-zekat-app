@@ -1113,13 +1113,18 @@ const ZEKAT_TARIHI = new Date('2026-03-05');
 const PROXY_URL    = 'https://coreg.rf.gd/daltin.php';
 const VERI_URL     = 'https://coreg.rf.gd/altinreal.php';
 
-// Capacitor ortamında native HTTP, tarayıcıda normal fetch kullan
+// Capacitor CapacitorHttp (native) veya tarayıcı fetch kullan
 async function httpGet(url) {
-    if (window.CapacitorHttp) {
-        const r = await window.CapacitorHttp.get({ url });
-        if (typeof r.data === 'string') return JSON.parse(r.data);
-        return r.data;
-    }
+    try {
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            const { CapacitorHttp } = window.Capacitor.Plugins;
+            if (CapacitorHttp) {
+                const r = await CapacitorHttp.request({ method: 'GET', url, headers: { 'Accept': 'application/json' } });
+                if (typeof r.data === 'string') return JSON.parse(r.data);
+                return r.data;
+            }
+        }
+    } catch(e) { console.warn('CapacitorHttp hatası, fetch deneniyor:', e.message); }
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 15000);
     const r = await fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', headers: { 'Accept': 'application/json' }, signal: controller.signal });
@@ -1128,15 +1133,20 @@ async function httpGet(url) {
 }
 
 async function httpPost(url, body) {
-    if (window.CapacitorHttp) {
-        const r = await window.CapacitorHttp.post({
-            url,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            data: body
-        });
-        if (typeof r.data === 'string') return JSON.parse(r.data);
-        return r.data;
-    }
+    try {
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            const { CapacitorHttp } = window.Capacitor.Plugins;
+            if (CapacitorHttp) {
+                const r = await CapacitorHttp.request({
+                    method: 'POST', url,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    data: body
+                });
+                if (typeof r.data === 'string') return JSON.parse(r.data);
+                return r.data;
+            }
+        }
+    } catch(e) { console.warn('CapacitorHttp POST hatası, fetch deneniyor:', e.message); }
     const r = await fetch(url, {
         method: 'POST', mode: 'cors', credentials: 'omit',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
