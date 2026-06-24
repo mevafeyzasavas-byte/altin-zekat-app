@@ -29,11 +29,10 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
 
-      - name: Capacitor ve HTTP Plugin Kur
+      - name: Capacitor Kur
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npm install @capacitor-community/http
 
       - name: capacitor.config.json oluştur
         run: |
@@ -49,7 +48,7 @@ jobs:
               "allowMixedContent": true
             },
             "plugins": {
-              "Http": {
+              "CapacitorHttp": {
                 "enabled": true
               }
             }
