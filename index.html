@@ -1122,8 +1122,12 @@ function httpGet(url) {
         xhr.timeout = 15000;
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
-                try { resolve(JSON.parse(xhr.responseText)); }
-                catch(e) { reject(new Error('JSON parse hatası')); }
+                try {
+                    let text = xhr.responseText.trim();
+                    if (text.charCodeAt(0) === 0xFEFF) text = text.substring(1);
+                    resolve(JSON.parse(text));
+                }
+                catch(e) { reject(new Error('Parse hatası: ' + xhr.responseText.substring(0, 100))); }
             } else { reject(new Error('HTTP ' + xhr.status)); }
         };
         xhr.onerror = function() { reject(new Error('Bağlantı hatası')); };
@@ -1140,8 +1144,12 @@ function httpPost(url, body) {
         xhr.timeout = 15000;
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
-                try { resolve(JSON.parse(xhr.responseText)); }
-                catch(e) { reject(new Error('JSON parse hatası')); }
+                try {
+                    let text = xhr.responseText.trim();
+                    if (text.charCodeAt(0) === 0xFEFF) text = text.substring(1);
+                    resolve(JSON.parse(text));
+                }
+                catch(e) { reject(new Error('Parse hatası: ' + xhr.responseText.substring(0, 100))); }
             } else { reject(new Error('HTTP ' + xhr.status)); }
         };
         xhr.onerror = function() { reject(new Error('Bağlantı hatası')); };
