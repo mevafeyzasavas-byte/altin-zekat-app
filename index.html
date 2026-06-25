@@ -1119,18 +1119,23 @@ function httpGet(url) {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.setRequestHeader('Accept', 'application/json');
+        xhr.responseType = 'text';
         xhr.timeout = 15000;
         xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    let text = xhr.responseText.trim();
-                    if (text.charCodeAt(0) === 0xFEFF) text = text.substring(1);
-                    resolve(JSON.parse(text));
-                }
-                catch(e) { reject(new Error('Parse hatası: ' + xhr.responseText.substring(0, 100))); }
-            } else { reject(new Error('HTTP ' + xhr.status)); }
+            try {
+                let text = xhr.responseText || '';
+                text = text.trim();
+                // BOM temizle
+                if (text.charCodeAt(0) === 0xFEFF) text = text.substring(1);
+                // HTML geliyorsa hata ver
+                if (text.startsWith('<')) { reject(new Error('Sunucu HTML döndü: ' + text.substring(0, 80))); return; }
+                if (!text) { reject(new Error('Boş yanıt')); return; }
+                resolve(JSON.parse(text));
+            } catch(e) {
+                reject(new Error('Parse: ' + (xhr.responseText||'').substring(0, 80)));
+            }
         };
-        xhr.onerror = function() { reject(new Error('Bağlantı hatası')); };
+        xhr.onerror = function() { reject(new Error('XHR onerror')); };
         xhr.ontimeout = function() { reject(new Error('Zaman aşımı')); };
         xhr.send();
     });
