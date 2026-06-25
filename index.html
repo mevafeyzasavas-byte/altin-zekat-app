@@ -1111,7 +1111,7 @@ document.addEventListener('keydown', function(e) {
 const ZEKAT_NISAB  = 80.18;
 const ZEKAT_TARIHI = new Date('2026-03-05');
 const PROXY_URL    = 'https://altinzekat.netlify.app/.netlify/functions/fiyat';
-const VERI_URL     = 'https://altinzekat.netlify.app/.netlify/functions/altinreal';
+const VERI_URL     = 'https://altinzekat.netlify.app/.netlify/functions/getData';
 const SAVE_URL     = 'https://altinzekat.netlify.app/.netlify/functions/saveData';
 
 // XMLHttpRequest ile HTTP istekleri (Capacitor XHR'ı native'e çevirir)
@@ -1276,7 +1276,7 @@ function sparklineCiz(verilerArr, renk, yukari) {
 // ============================================================
 async function sunucudanVeriYukle() {
     try {
-        const data = await httpGet(VERI_URL + '?action=getData&t=' + Date.now());
+        const data = await httpGet(VERI_URL + '?t=' + Date.now());
 
         if (data.status === 'success') {
             veriler.manuelGramMiktar   = data.gramMiktar    || 98;
