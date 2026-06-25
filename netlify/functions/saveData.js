@@ -1,11 +1,20 @@
-const { getStore } = require('@netlify/blobs');
-
 exports.handler = async function(event, context) {
+  const BIN_ID = '6a3cfb1bda38895dfefc7ccc';
+  const API_KEY = '$2a$10$GhDAl4ts887p.JChRGcize.sD0naZdeZzQUWMDHtBBGl31qkX/wWm';
+
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' }, body: '' };
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
+      body: ''
+    };
   }
+
   try {
-    const store = getStore('altinportfoy');
     const params = new URLSearchParams(event.body);
     const veriler = {
       gramMiktar:        parseFloat(params.get('gramMiktar')        || 65),
@@ -18,11 +27,21 @@ exports.handler = async function(event, context) {
       manuelCeyrekFiyat: parseFloat(params.get('manuelCeyrekFiyat') || 0),
       sonGuncelleme:     new Date().toISOString()
     };
-    await store.set('veriler', JSON.stringify(veriler));
+
+    // JSONBin'e kaydet
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify(veriler)
+    });
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ status: 'success', sonGuncelleme: veriler.sonGuncelleme })
+      body: JSON.stringify({ status: 'success', sonGuncelleme: veriler.sonGuncelleme, timestamp: Date.now() })
     };
   } catch(e) {
     return {
