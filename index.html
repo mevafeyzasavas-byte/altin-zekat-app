@@ -1275,7 +1275,7 @@ function sparklineCiz(verilerArr, renk, yukari) {
 // ============================================================
 async function sunucudanVeriYukle() {
     try {
-        const data = await httpGet(VERI_URL + '?t=' + Date.now());
+        const data = await httpPost(VERI_URL, 'action=getData&t=' + Date.now());
 
         if (data.status === 'success') {
             veriler.manuelGramMiktar   = data.gramMiktar    || 98;
@@ -1348,8 +1348,8 @@ function durumGuncelle(durum, mesaj) {
 async function anlikFiyatlariGetir() {
     durumGuncelle('loading', 'Fiyatlar alınıyor...');
     try {
-        // Fiyatlar artık altinreal.php GET yanıtında geliyor
-        const data = await httpGet(VERI_URL + '?t=' + Date.now());
+        // Fiyatlar POST ile alınıyor (hosting GET'i engelliyor)
+        const data = await httpPost(VERI_URL, 'action=getData&t=' + Date.now());
         if (data.gramFiyatCanli) {
             parseAPIResponse({
                 gram: data.gramFiyatCanli,
