@@ -1,15 +1,14 @@
-const { getStore } = require('@netlify/blobs');
-
 exports.handler = async function(event, context) {
+  const BIN_ID = '6a3cfb1bda38895dfefc7ccc';
+  const API_KEY = '$2a$10$GhDAl4ts887p.JChRGcize.sD0naZdeZzQUWMDHtBBGl31qkX/wWm';
+
   try {
-    const store = getStore('altinportfoy');
-    const raw = await store.get('veriler');
-    
-    let veriler = raw ? JSON.parse(raw) : {
-      gramMiktar: 65, ceyrekMiktar: 13,
-      nGramMiktar: 95, nCeyrekMiktar: 13,
-      manuelGramFiyat: 0, manuelCeyrekFiyat: 0
-    };
+    // JSONBin'den veri oku
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': API_KEY }
+    });
+    const json = await res.json();
+    const veriler = json.record;
 
     // Altın fiyatlarını çek
     const fiyatRes = await fetch('https://static.altinkaynak.com/Store_Gold_2', {
