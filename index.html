@@ -1111,7 +1111,8 @@ document.addEventListener('keydown', function(e) {
 const ZEKAT_NISAB  = 80.18;
 const ZEKAT_TARIHI = new Date('2026-03-05');
 const PROXY_URL    = 'https://altinzekat.netlify.app/.netlify/functions/fiyat';
-const VERI_URL     = 'https://coreg.rf.gd/altinreal.php';
+const VERI_URL     = 'https://altinzekat.netlify.app/.netlify/functions/altinreal';
+const SAVE_URL     = 'https://altinzekat.netlify.app/.netlify/functions/saveData';
 
 // XMLHttpRequest ile HTTP istekleri (Capacitor XHR'ı native'e çevirir)
 function httpGet(url) {
@@ -1320,7 +1321,7 @@ async function sunucuyaVeriKaydet() {
         formData.append('manuelGramFiyat',   veriler.manuelGramFiyat);
         formData.append('manuelCeyrekFiyat', veriler.manuelCeyrekFiyat);
 
-        const data = await httpPost(VERI_URL, formData.toString());
+        const data = await httpPost(SAVE_URL, formData.toString());
         if (data.status !== 'success') console.warn('Sunucu kayıt hatası:', data.message);
     } catch (e) {
         console.warn('Sunucuya kaydedilemedi:', e.message);
