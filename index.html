@@ -1110,7 +1110,7 @@ document.addEventListener('keydown', function(e) {
 // =============================================
 const ZEKAT_NISAB  = 80.18;
 const ZEKAT_TARIHI = new Date('2026-03-05');
-const PROXY_URL    = null; // artık kullanılmıyor
+const PROXY_URL    = 'https://altinzekat.netlify.app/.netlify/functions/fiyat';
 const VERI_URL     = 'https://coreg.rf.gd/altinreal.php';
 
 // XMLHttpRequest ile HTTP istekleri (Capacitor XHR'ı native'e çevirir)
@@ -1348,16 +1348,8 @@ function durumGuncelle(durum, mesaj) {
 async function anlikFiyatlariGetir() {
     durumGuncelle('loading', 'Fiyatlar alınıyor...');
     try {
-        // Fiyatlar POST ile alınıyor (hosting GET'i engelliyor)
-        const data = await httpGet(VERI_URL + '?action=getData&t=' + Date.now());
-        if (data.gramFiyatCanli) {
-            parseAPIResponse({
-                gram: data.gramFiyatCanli,
-                ceyrek: data.ceyrekFiyatCanli
-            });
-        } else {
-            throw new Error('Fiyat verisi yok');
-        }
+        const data = await httpGet(PROXY_URL + '?t=' + Date.now());
+        parseAPIResponse(data);
     } catch (error) {
         console.error('API hatası:', error.message, error.name);
         durumGuncelle('offline', error.message.substring(0, 25));
