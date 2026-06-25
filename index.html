@@ -1364,8 +1364,17 @@ function parseAPIResponse(data) {
         let gramFiyat   = 0;
         let ceyrekFiyat = 0;
 
-        if (data.gram && data.gram.alis)   gramFiyat   = parseFloat(String(data.gram.alis).trim());
-        if (data.ceyrek && data.ceyrek.alis) ceyrekFiyat = parseFloat(String(data.ceyrek.alis).trim());
+        // Türkçe ve İngilizce format desteği: "6.027,50" veya "6027.50"
+        function parseFiyat(val) {
+            if (!val) return 0;
+            let s = String(val).trim();
+            // Türkçe format: nokta=binlik ayraç, virgül=ondalık
+            if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+            return parseFloat(s) || 0;
+        }
+
+        if (data.gram && data.gram.alis)   gramFiyat   = parseFiyat(data.gram.alis);
+        if (data.ceyrek && data.ceyrek.alis) ceyrekFiyat = parseFiyat(data.ceyrek.alis);
         if (isNaN(gramFiyat)   || gramFiyat   <= 0) gramFiyat   = 0;
         if (isNaN(ceyrekFiyat) || ceyrekFiyat <= 0) ceyrekFiyat = 0;
         if (gramFiyat > 0 && ceyrekFiyat === 0) ceyrekFiyat = gramFiyat * 1.75;
@@ -1373,8 +1382,8 @@ function parseAPIResponse(data) {
         if (gramFiyat > 0) {
             veriler.anlıkGramAlisFiyat   = gramFiyat;
             veriler.anlıkCeyrekAlisFiyat = ceyrekFiyat;
-            if (data.gram?.satis)   veriler.anlıkGramSatisFiyat   = parseFloat(String(data.gram.satis).trim());
-            if (data.ceyrek?.satis) veriler.anlıkCeyrekSatisFiyat = parseFloat(String(data.ceyrek.satis).trim());
+            if (data.gram?.satis)   veriler.anlıkGramSatisFiyat   = parseFiyat(data.gram.satis);
+            if (data.ceyrek?.satis) veriler.anlıkCeyrekSatisFiyat = parseFiyat(data.ceyrek.satis);
             else if (veriler.anlıkGramSatisFiyat > 0) veriler.anlıkCeyrekSatisFiyat = veriler.anlıkGramSatisFiyat * 1.75;
 
             sunucuyaVeriKaydet();
