@@ -1,16 +1,17 @@
-exports.handler = async function(event, context) {
-  const VERI_URL = 'https://coreg.rf.gd/altinreal.php';
-  
-  try {
-    // Veri oku
-    const response = await fetch(VERI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'action=getData'
-    });
-    const data = await response.json();
+const { getStore } = require('@netlify/blobs');
 
-    // Fiyatları da çek
+exports.handler = async function(event, context) {
+  try {
+    const store = getStore('altinportfoy');
+    const raw = await store.get('veriler');
+    
+    let veriler = raw ? JSON.parse(raw) : {
+      gramMiktar: 65, ceyrekMiktar: 13,
+      nGramMiktar: 95, nCeyrekMiktar: 13,
+      manuelGramFiyat: 0, manuelCeyrekFiyat: 0
+    };
+
+    // Altın fiyatlarını çek
     const fiyatRes = await fetch('https://static.altinkaynak.com/Store_Gold_2', {
       headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
     });
@@ -19,21 +20,19 @@ exports.handler = async function(event, context) {
     let gram = null, ceyrek = null;
     for (const item of fiyatJson) {
       const kod = (item.Kod || '').toUpperCase().trim();
-      if ((kod === 'GAT' || (kod === 'GA' && !gram))) {
-        gram = { alis: item.Alis, satis: item.Satis };
-      }
-      if (kod === 'PC' && !ceyrek) {
-        ceyrek = { alis: item.Alis, satis: item.Satis };
-      }
+      if (kod === 'GAT' || (kod === 'GA' && !gram)) gram = { alis: item.Alis, satis: item.Satis };
+      if (kod === 'PC' && !ceyrek) ceyrek = { alis: item.Alis, satis: item.Satis };
     }
 
-    data.gramFiyatCanli = gram;
-    data.ceyrekFiyatCanli = ceyrek;
+    veriler.gramFiyatCanli = gram;
+    veriler.ceyrekFiyatCanli = ceyrek;
+    veriler.status = 'success';
+    veriler.timestamp = Date.now();
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(veriler)
     };
   } catch(e) {
     return {
