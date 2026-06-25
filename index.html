@@ -1110,7 +1110,7 @@ document.addEventListener('keydown', function(e) {
 // =============================================
 const ZEKAT_NISAB  = 80.18;
 const ZEKAT_TARIHI = new Date('2026-03-05');
-const PROXY_URL    = 'https://coreg.rf.gd/daltin.php';
+const PROXY_URL    = 'https://coreg.rf.gd/daltin.php?action=fiyat';
 const VERI_URL     = 'https://coreg.rf.gd/altinreal.php';
 
 // XMLHttpRequest ile HTTP istekleri (Capacitor XHR'ı native'e çevirir)
@@ -1119,6 +1119,7 @@ function httpGet(url) {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.responseType = 'text';
         xhr.timeout = 15000;
         xhr.onload = function() {
