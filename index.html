@@ -1110,7 +1110,7 @@ document.addEventListener('keydown', function(e) {
 // =============================================
 const ZEKAT_NISAB  = 80.18;
 const ZEKAT_TARIHI = new Date('2026-03-05');
-const PROXY_URL    = 'https://coreg.rf.gd/daltin.php?action=fiyat';
+const PROXY_URL    = null; // artık kullanılmıyor
 const VERI_URL     = 'https://coreg.rf.gd/altinreal.php';
 
 // XMLHttpRequest ile HTTP istekleri (Capacitor XHR'ı native'e çevirir)
@@ -1348,13 +1348,19 @@ function durumGuncelle(durum, mesaj) {
 async function anlikFiyatlariGetir() {
     durumGuncelle('loading', 'Fiyatlar alınıyor...');
     try {
-        const data = await httpGet(PROXY_URL + '?t=' + Date.now());
-        parseAPIResponse(data);
+        // Fiyatlar artık altinreal.php GET yanıtında geliyor
+        const data = await httpGet(VERI_URL + '?t=' + Date.now());
+        if (data.gramFiyatCanli) {
+            parseAPIResponse({
+                gram: data.gramFiyatCanli,
+                ceyrek: data.ceyrekFiyatCanli
+            });
+        } else {
+            throw new Error('Fiyat verisi yok');
+        }
     } catch (error) {
         console.error('API hatası:', error.message, error.name);
-        if (error.name === 'AbortError') durumGuncelle('offline', 'Zaman aşımı');
-        else if (error.name === 'TypeError') durumGuncelle('offline', 'Bağlantı yok');
-        else durumGuncelle('offline', error.message.substring(0, 20));
+        durumGuncelle('offline', error.message.substring(0, 25));
         ekraniGuncelle();
     }
 }
