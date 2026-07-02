@@ -184,6 +184,79 @@ body {
 .pill-v.down { color: #c05a20; }
 .pill-v.man { color: #4a4a4a; font-size: 12px; }
 
+.pline-multi {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    border-top: 1px dashed #e8dfc4;
+    padding-top: 10px;
+    margin-top: 2px;
+}
+.pline-multi-btns {
+    display: flex;
+    gap: 5px;
+    width: 100%;
+    justify-content: center;
+}
+.pline-multi-btn {
+    flex: 1;
+    max-width: 34px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #e8dfc4;
+    background: #fffdf6;
+    color: #8a7a50;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s, transform .1s;
+    padding: 0;
+}
+.pline-multi-btn:hover {
+    border-color: #f0c040;
+}
+.pline-multi-btn:active {
+    transform: scale(0.94);
+}
+.pline-multi-btn.active {
+    background: linear-gradient(160deg, #ffe066, #f0c040);
+    border-color: #c8a030;
+    color: #4a3400;
+    box-shadow: 0 2px 4px rgba(200,160,30,0.35);
+}
+.pline-multi-result {
+    font-size: 15px;
+    font-weight: 800;
+    color: #5a4a20;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.multi-total {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: -6px 0 18px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #fffbea 0%, #fff5d6 100%);
+    border: 1.5px solid #f0c040;
+}
+.multi-total-k {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #a8894a;
+}
+.multi-total-v {
+    font-size: 20px;
+    font-weight: 800;
+    color: #4a3400;
+}
+
 .fv-green-flash { animation: flashGreen 1.2s ease; }
 .fv-red-flash   { animation: flashRed  1.2s ease; }
 @keyframes flashGreen { 0%,100%{background:transparent} 30%{background:rgba(34,197,94,0.18)} }
@@ -865,6 +938,16 @@ body {
                     <div class="pill-v" id="gramAnlikSatisFiyat">--</div>
                 </div>
             </div>
+            <div class="pline-multi">
+                <div class="pline-multi-btns" id="gramMultiBtns">
+                    <button type="button" class="pline-multi-btn" data-n="1" onclick="event.stopPropagation();gramMultiSec(1)">1</button>
+                    <button type="button" class="pline-multi-btn" data-n="2" onclick="event.stopPropagation();gramMultiSec(2)">2</button>
+                    <button type="button" class="pline-multi-btn" data-n="3" onclick="event.stopPropagation();gramMultiSec(3)">3</button>
+                    <button type="button" class="pline-multi-btn" data-n="4" onclick="event.stopPropagation();gramMultiSec(4)">4</button>
+                    <button type="button" class="pline-multi-btn" data-n="5" onclick="event.stopPropagation();gramMultiSec(5)">5</button>
+                </div>
+                <div class="pline-multi-result" id="gramMultiResult">--</div>
+            </div>
         </div>
         <div class="pline" onclick="kartAc('ceyrek')">
             <div class="pline-type">Çeyrek</div>
@@ -878,7 +961,22 @@ body {
                     <div class="pill-v" id="ceyrekAnlikSatisFiyat">--</div>
                 </div>
             </div>
+            <div class="pline-multi">
+                <div class="pline-multi-btns" id="ceyrekMultiBtns">
+                    <button type="button" class="pline-multi-btn" data-n="1" onclick="event.stopPropagation();ceyrekMultiSec(1)">1</button>
+                    <button type="button" class="pline-multi-btn" data-n="2" onclick="event.stopPropagation();ceyrekMultiSec(2)">2</button>
+                    <button type="button" class="pline-multi-btn" data-n="3" onclick="event.stopPropagation();ceyrekMultiSec(3)">3</button>
+                    <button type="button" class="pline-multi-btn" data-n="4" onclick="event.stopPropagation();ceyrekMultiSec(4)">4</button>
+                    <button type="button" class="pline-multi-btn" data-n="5" onclick="event.stopPropagation();ceyrekMultiSec(5)">5</button>
+                </div>
+                <div class="pline-multi-result" id="ceyrekMultiResult">--</div>
+            </div>
         </div>
+    </div>
+
+    <div class="multi-total" id="multiTotalBox">
+        <div class="multi-total-k">Seçili Toplam</div>
+        <div class="multi-total-v" id="multiTotalResult">--</div>
     </div>
 
     <div class="div"></div>
@@ -1483,6 +1581,52 @@ function _fiyatGuncelle(elemId, yeniFiyat, oncekiKey) {
 }
 
 // ============================================================
+// GRAM / ÇEYREK ÇARPAN BUTONLARI (1-5 adet toplam fiyat)
+// ============================================================
+let gramMultiSecili   = null;
+let ceyrekMultiSecili = null;
+
+function _multiBtnGuncelle(prefix, secili) {
+    const kapsayici = document.getElementById(prefix + 'MultiBtns');
+    if (!kapsayici) return;
+    kapsayici.querySelectorAll('.pline-multi-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.n, 10) === secili);
+    });
+}
+
+function gramMultiSec(n) {
+    gramMultiSecili = (gramMultiSecili === n) ? null : n;
+    _multiBtnGuncelle('gram', gramMultiSecili);
+    _multiSonucGuncelle();
+}
+
+function ceyrekMultiSec(n) {
+    ceyrekMultiSecili = (ceyrekMultiSecili === n) ? null : n;
+    _multiBtnGuncelle('ceyrek', ceyrekMultiSecili);
+    _multiSonucGuncelle();
+}
+
+function _multiSonucGuncelle() {
+    const gramTutar   = (gramMultiSecili   && veriler.anlıkGramSatisFiyat   > 0) ? veriler.anlıkGramSatisFiyat   * gramMultiSecili   : 0;
+    const ceyrekTutar = (ceyrekMultiSecili && veriler.anlıkCeyrekSatisFiyat > 0) ? veriler.anlıkCeyrekSatisFiyat * ceyrekMultiSecili : 0;
+
+    const gramEl = document.getElementById('gramMultiResult');
+    if (gramEl) {
+        gramEl.textContent = gramTutar > 0 ? Math.round(gramTutar).toLocaleString('tr-TR') + ' TL' : '--';
+    }
+    const ceyrekEl = document.getElementById('ceyrekMultiResult');
+    if (ceyrekEl) {
+        ceyrekEl.textContent = ceyrekTutar > 0 ? Math.round(ceyrekTutar).toLocaleString('tr-TR') + ' TL' : '--';
+    }
+
+    const toplamEl = document.getElementById('multiTotalResult');
+    if (toplamEl) {
+        const toplam = gramTutar + ceyrekTutar;
+        toplamEl.textContent = toplam > 0 ? Math.round(toplam).toLocaleString('tr-TR') + ' TL' : '--';
+    }
+}
+
+// ============================================================
 // EKRANI GÜNCELLE
 // ============================================================
 function formatTurkishDateTime(date) {
@@ -1525,6 +1669,8 @@ function ekraniGuncelle() {
             else if (alisYon === 'asagi') cSatisEl.classList.add('down');
         }
     }
+
+    _multiSonucGuncelle();
 
     document.getElementById('manuelGramDisplay').textContent =
         veriler.manuelGramFiyat.toLocaleString('tr-TR', { minimumFractionDigits: 0 }) + ' TL';
