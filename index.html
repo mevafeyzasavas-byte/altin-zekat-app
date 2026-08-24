@@ -1508,7 +1508,11 @@ function acilisKarsilastirmaGuncelle(guncelDeger) {
 // ============================================================
 // SUNUCU
 // ============================================================
-async function sunucudanVeriYukle() {
+let sunucuVerisiHazir = false; // sunucudan gerçek miktar başarıyla yüklenene kadar true olmaz
+const SUNUCU_YUKLEME_MAX_DENEME = 5;
+
+async function sunucudanVeriYukle(deneme) {
+    deneme = deneme || 1;
     try {
         const data = await httpGet(VERI_URL + '?t=' + Date.now());
 
@@ -1517,6 +1521,7 @@ async function sunucudanVeriYukle() {
             veriler.manuelCeyrekMiktar = data.ceyrekMiktar  || 14;
             veriler.nGramMiktar        = data.nGramMiktar   || veriler.manuelGramMiktar;
             veriler.nCeyrekMiktar      = data.nCeyrekMiktar || veriler.manuelCeyrekMiktar;
+            sunucuVerisiHazir = true; // artık bellekteki değerler güvenilir, kaydetmeye izin ver
             if (veriler.nGramMiktar !== veriler.manuelGramMiktar || veriler.nCeyrekMiktar !== veriler.manuelCeyrekMiktar) {
                 veriler.nGramMiktar   = veriler.manuelGramMiktar;
                 veriler.nCeyrekMiktar = veriler.manuelCeyrekMiktar;
@@ -1538,12 +1543,19 @@ async function sunucudanVeriYukle() {
             }
         }
     } catch (e) {
-        console.warn('Sunucudan veri yüklenemedi:', e.message);
+        console.warn('Sunucudan veri yüklenemedi (deneme ' + deneme + '):', e.message);
+        if (deneme < SUNUCU_YUKLEME_MAX_DENEME) {
+            setTimeout(() => sunucudanVeriYukle(deneme + 1), 4000);
+        }
     }
     ekraniGuncelle();
 }
 
 async function sunucuyaVeriKaydet() {
+    if (!sunucuVerisiHazir) {
+        console.warn('Sunucu verisi henüz doğrulanmadı, kayıt atlandı (veri kaybını önlemek için).');
+        return;
+    }
     try {
         const formData = new URLSearchParams();
         formData.append('gramMiktar',        veriler.manuelGramMiktar);
