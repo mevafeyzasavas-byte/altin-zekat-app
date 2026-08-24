@@ -352,18 +352,22 @@ body {
     padding-top: 12px;
     border-top: 1px solid rgba(255,220,80,0.15);
     display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
-.big-prev.show { display: block; }
+.big-prev.show { display: flex; }
 .big-prev-zaman {
     font-size: 12px;
     color: #a89870;
     letter-spacing: .02em;
 }
 .big-prev-deger {
-    font-size: clamp(16px, 5.5cqi, 22px);
+    font-size: clamp(17px, 5.67cqi, 31px);
     font-weight: 700;
     color: #d8c89a;
-    margin-top: 2px;
+    margin-top: 0;
 }
 .big-prev-deger .lira-sym {
     font-size: .85em;
@@ -371,7 +375,7 @@ body {
     margin-right: 1px;
 }
 .big-fark {
-    margin-top: 10px;
+    margin-top: 0;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1463,12 +1467,15 @@ function _acilisSnapshotKaydet(deger) {
 function acilisKarsilastirmaGuncelle(guncelDeger) {
     if (!guncelDeger || guncelDeger <= 0) return;
 
-    _acilisSnapshotKaydet(guncelDeger);
-
-    if (acilisGosterimYapildi) return;
+    if (acilisGosterimYapildi) {
+        _acilisSnapshotKaydet(guncelDeger);
+        return;
+    }
     acilisGosterimYapildi = true;
 
     const onceki = _acilisSnapshotYukle();
+    _acilisSnapshotKaydet(guncelDeger);
+
     const box = document.getElementById('oncekiAcilisBox');
     if (!onceki || !onceki.deger || !box) return;
 
