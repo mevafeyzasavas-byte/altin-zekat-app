@@ -34,10 +34,10 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: capacitor.config.json oluştur
-        run: |
-          echo '{"appId":"com.altinportfoy.app","appName":"Altın Portföy","webDir":"www","server":{"androidScheme":"https"},"android":{"allowMixedContent":true},"plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
-
+- name: capacitor.config.json oluştur
+  run: |
+    echo '{"appId":"com.altinportfoy.app","appName":"Altın Portföy","webDir":"www","server":{"androidScheme":"https","url":"https://altinzekat.netlify.app","cleartext":false},"android":{"allowMixedContent":true},"plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
+    
       - name: Android Platform Ekle
         run: npx cap add android
 
