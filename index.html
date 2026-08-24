@@ -347,6 +347,48 @@ body {
     vertical-align: baseline;
 }
 .big-meta { display: none; }
+.big-prev {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,220,80,0.15);
+    display: none;
+}
+.big-prev.show { display: block; }
+.big-prev-zaman {
+    font-size: 12px;
+    color: #a89870;
+    letter-spacing: .02em;
+}
+.big-prev-deger {
+    font-size: clamp(16px, 5.5cqi, 22px);
+    font-weight: 700;
+    color: #d8c89a;
+    margin-top: 2px;
+}
+.big-prev-deger .lira-sym {
+    font-size: .85em;
+    color: #c8a860;
+    margin-right: 1px;
+}
+.big-fark {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 20px;
+    padding: 5px 14px;
+}
+.big-fark.pozitif { background: rgba(34,197,94,0.12); }
+.big-fark.negatif { background: rgba(220,38,38,0.14); }
+.big-fark-ok { font-size: 14px; }
+.big-fark-tutar { font-weight: 700; font-size: 15px; }
+.big-fark-yuzde { font-size: 12px; opacity: .85; }
+.big-fark.pozitif .big-fark-ok,
+.big-fark.pozitif .big-fark-tutar { color: #4ade80; }
+.big-fark.pozitif .big-fark-yuzde { color: #8fbf9f; }
+.big-fark.negatif .big-fark-ok,
+.big-fark.negatif .big-fark-tutar { color: #f87171; }
+.big-fark.negatif .big-fark-yuzde { color: #d99b9b; }
 
 .div2 { height: 1px; background: #e8e0cc; margin: 0 0 16px; }
 
@@ -993,6 +1035,15 @@ body {
                 </div>
                 <canvas id="portfolyoSparkline" width="52" height="22" style="display:none;"></canvas>
             </div>
+            <div class="big-prev" id="oncekiAcilisBox">
+                <div class="big-prev-zaman" id="oncekiAcilisZaman">--</div>
+                <div class="big-prev-deger"><span class="lira-sym">₺</span><span id="oncekiAcilisDeger">--</span></div>
+                <div class="big-fark" id="acilisFarkBox">
+                    <span class="big-fark-ok" id="acilisFarkOk"></span>
+                    <span class="big-fark-tutar" id="acilisFarkTutar"></span>
+                    <span class="big-fark-yuzde" id="acilisFarkYuzde"></span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1399,6 +1450,61 @@ function sparklineCiz(verilerArr, renk, yukari) {
     ctx.fillStyle = renk; ctx.fill();
 }
 
+const ACILIS_LS_KEY = 'altinAnlikDeger_oncekiAcilis';
+let acilisGosterimYapildi = false;
+
+function _acilisSnapshotYukle() {
+    try { return JSON.parse(localStorage.getItem(ACILIS_LS_KEY)) || null; } catch(e) { return null; }
+}
+function _acilisSnapshotKaydet(deger) {
+    try { localStorage.setItem(ACILIS_LS_KEY, JSON.stringify({ deger, zaman: Date.now() })); } catch(e) {}
+}
+
+function acilisKarsilastirmaGuncelle(guncelDeger) {
+    if (!guncelDeger || guncelDeger <= 0) return;
+
+    _acilisSnapshotKaydet(guncelDeger);
+
+    if (acilisGosterimYapildi) return;
+    acilisGosterimYapildi = true;
+
+    const onceki = _acilisSnapshotYukle();
+    const box = document.getElementById('oncekiAcilisBox');
+    if (!onceki || !onceki.deger || !box) return;
+
+    const zamanEl  = document.getElementById('oncekiAcilisZaman');
+    const degerEl  = document.getElementById('oncekiAcilisDeger');
+    const farkBox  = document.getElementById('acilisFarkBox');
+    const farkOk   = document.getElementById('acilisFarkOk');
+    const farkTutarEl = document.getElementById('acilisFarkTutar');
+    const farkYuzdeEl = document.getElementById('acilisFarkYuzde');
+
+    const tarih = new Date(onceki.zaman);
+    const tarihStr = tarih.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) +
+                      ' ' + tarih.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+    if (zamanEl) zamanEl.textContent = tarihStr;
+    if (degerEl) degerEl.textContent = Math.round(onceki.deger).toLocaleString('tr-TR');
+
+    const fark = guncelDeger - onceki.deger;
+    const yuzde = onceki.deger > 0 ? (fark / onceki.deger) * 100 : 0;
+    const pozitif = fark >= 0;
+
+    if (farkBox) {
+        farkBox.classList.toggle('pozitif', pozitif);
+        farkBox.classList.toggle('negatif', !pozitif);
+    }
+    if (farkOk) farkOk.textContent = pozitif ? '↑' : '↓';
+    if (farkTutarEl) {
+        farkTutarEl.textContent = (pozitif ? '+' : '') + Math.round(fark).toLocaleString('tr-TR') + ' ₺';
+    }
+    if (farkYuzdeEl) {
+        farkYuzdeEl.textContent = '(' + (pozitif ? '+' : '') + yuzde.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%)';
+    }
+
+    box.classList.add('show');
+}
+
 // ============================================================
 // SUNUCU
 // ============================================================
@@ -1715,8 +1821,9 @@ function hesaplaToplamlar() {
     document.getElementById('toplamDegerDisplay').innerText  = `${Math.round(anlıkToplam).toLocaleString('tr-TR')} TL`;
     document.getElementById('manuelToplamDisplay').innerText = `${Math.round(manuelToplam).toLocaleString('tr-TR')} TL`;
 
-    document.getElementById('nisapTutari').innerText = Math.round(nisapTutari).toLocaleString('tr-TR');
-    portfolyoSparklineGuncelle(nisapTutari);
+document.getElementById('nisapTutari').innerText = Math.round(nisapTutari).toLocaleString('tr-TR');
+portfolyoSparklineGuncelle(nisapTutari);
+acilisKarsilastirmaGuncelle(nisapTutari);   // ← eklenen satır
 
     document.getElementById('nmToplamTutari').innerText = Math.round(nmToplamTutari).toLocaleString('tr-TR');
     document.getElementById('manuelToplamTutari').innerText = `${Math.round(anlıkToplam).toLocaleString('tr-TR')} TL`;
