@@ -1,66 +1,51 @@
 name: Build APK
-
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Kodu İndir
         uses: actions/checkout@v4
-
       - name: Java Kur
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-
       - name: Node.js Kur
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: HTML'yi www klasörüne taşı
         run: |
           mkdir -p www
           cp index.html www/index.html
-
       - name: Capacitor Kur
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-
-- name: capacitor.config.json oluştur
-  run: |
-    echo '{"appId":"com.altinportfoy.app","appName":"Altın Portföy","webDir":"www","server":{"androidScheme":"https","url":"https://altinzekat.netlify.app","cleartext":false},"android":{"allowMixedContent":true},"plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
-    
+      - name: capacitor.config.json oluştur
+        run: |
+          echo '{"appId":"com.altinportfoy.app","appName":"Altın Portföy","webDir":"www","server":{"androidScheme":"https","url":"https://altinzekat.netlify.app","cleartext":false},"android":{"allowMixedContent":true},"plugins":{"CapacitorHttp":{"enabled":true}}}' > capacitor.config.json
       - name: Android Platform Ekle
         run: npx cap add android
-
       - name: Sync
         run: npx cap sync android
-
       - name: Network Security Config ekle
         run: |
           mkdir -p android/app/src/main/res/xml
           echo '<?xml version="1.0" encoding="utf-8"?><network-security-config><base-config cleartextTrafficPermitted="true"><trust-anchors><certificates src="system"/><certificates src="user"/></trust-anchors></base-config></network-security-config>' > android/app/src/main/res/xml/network_security_config.xml
-
       - name: AndroidManifest güncelle
         run: |
           sed -i 's|<application|<application android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config"|' android/app/src/main/AndroidManifest.xml
-
       - name: Gradle İzni Ver
         run: chmod +x android/gradlew
-
       - name: APK Derle
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
-
       - name: APK'yı Artifact Olarak Yükle
         uses: actions/upload-artifact@v4
         with:
