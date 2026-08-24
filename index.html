@@ -359,7 +359,8 @@ body {
 }
 .big-prev.show { display: flex; }
 .big-prev-zaman {
-    font-size: 12px;
+    font-size: clamp(17px, 5.67cqi, 31px);
+    font-weight: 700;
     color: #a89870;
     letter-spacing: .02em;
 }
@@ -368,6 +369,12 @@ body {
     font-weight: 700;
     color: #d8c89a;
     margin-top: 0;
+}
+.big-prev-deger::before {
+    content: '-';
+    color: #a89870;
+    margin-right: 10px;
+    font-weight: 700;
 }
 .big-prev-deger .lira-sym {
     font-size: .85em;
@@ -382,17 +389,21 @@ body {
     border-radius: 20px;
     padding: 5px 14px;
 }
+.big-fark::before {
+    content: '-';
+    margin-right: 4px;
+    font-weight: 700;
+    color: inherit;
+}
 .big-fark.pozitif { background: rgba(34,197,94,0.12); }
 .big-fark.negatif { background: rgba(220,38,38,0.14); }
-.big-fark-ok { font-size: 14px; }
-.big-fark-tutar { font-weight: 700; font-size: 15px; }
-.big-fark-yuzde { font-size: 12px; opacity: .85; }
+.big-fark-ok { font-size: clamp(17px, 5.67cqi, 31px); }
+.big-fark-tutar { font-weight: 700; font-size: clamp(17px, 5.67cqi, 31px); }
+.big-fark-yuzde { display: none; }
 .big-fark.pozitif .big-fark-ok,
 .big-fark.pozitif .big-fark-tutar { color: #4ade80; }
-.big-fark.pozitif .big-fark-yuzde { color: #8fbf9f; }
 .big-fark.negatif .big-fark-ok,
 .big-fark.negatif .big-fark-tutar { color: #f87171; }
-.big-fark.negatif .big-fark-yuzde { color: #d99b9b; }
 
 .div2 { height: 1px; background: #e8e0cc; margin: 0 0 16px; }
 
