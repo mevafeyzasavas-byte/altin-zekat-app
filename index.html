@@ -1469,7 +1469,6 @@ function sparklineCiz(verilerArr, renk, yukari) {
 }
 
 const ACILIS_LS_KEY = 'altinAnlikDeger_oncekiAcilis';
-let acilisGosterimYapildi = false;
 
 function _acilisSnapshotYukle() {
     try { return JSON.parse(localStorage.getItem(ACILIS_LS_KEY)) || null; } catch(e) { return null; }
@@ -1490,24 +1489,19 @@ function _acilisSnapshotKaydet(deger) {
 function acilisKarsilastirmaGuncelle(guncelDeger) {
     if (!guncelDeger || guncelDeger <= 0) return;
 
-    if (acilisGosterimYapildi) {
-        _acilisSnapshotKaydet(guncelDeger);
-        return;
-    }
-    acilisGosterimYapildi = true;
-
+    // Önce mevcut referansı oku, SONRA (limitli olarak) yeni snapshot'ı kaydet
     const onceki = _acilisSnapshotYukle();
     _acilisSnapshotKaydet(guncelDeger);
 
     const box = document.getElementById('oncekiAcilisBox');
     if (!onceki || !onceki.deger || !box) return;
 
-    const zamanEl  = document.getElementById('oncekiAcilisZaman');
-    const degerEl  = document.getElementById('oncekiAcilisDeger');
-    const farkBox  = document.getElementById('acilisFarkBox');
-    const farkOk   = document.getElementById('acilisFarkOk');
-    const farkTutarEl = document.getElementById('acilisFarkTutar');
-    const farkYuzdeEl = document.getElementById('acilisFarkYuzde');
+    const zamanEl      = document.getElementById('oncekiAcilisZaman');
+    const degerEl       = document.getElementById('oncekiAcilisDeger');
+    const farkBox        = document.getElementById('acilisFarkBox');
+    const farkOk          = document.getElementById('acilisFarkOk');
+    const farkTutarEl  = document.getElementById('acilisFarkTutar');
+    const farkYuzdeEl  = document.getElementById('acilisFarkYuzde');
 
     const tarih = new Date(onceki.zaman);
     const tarihStr = tarih.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) +
