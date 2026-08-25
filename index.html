@@ -1474,8 +1474,17 @@ let acilisGosterimYapildi = false;
 function _acilisSnapshotYukle() {
     try { return JSON.parse(localStorage.getItem(ACILIS_LS_KEY)) || null; } catch(e) { return null; }
 }
+const ACILIS_MIN_ARALIK_MS = 60 * 60 * 1000; // referans en fazla saatte bir güncellensin
+
 function _acilisSnapshotKaydet(deger) {
-    try { localStorage.setItem(ACILIS_LS_KEY, JSON.stringify({ deger, zaman: Date.now() })); } catch(e) {}
+    try {
+        const eskiKayit = _acilisSnapshotYukle();
+        const simdi = Date.now();
+        if (eskiKayit && eskiKayit.zaman && (simdi - eskiKayit.zaman) < ACILIS_MIN_ARALIK_MS) {
+            return;
+        }
+        localStorage.setItem(ACILIS_LS_KEY, JSON.stringify({ deger, zaman: simdi }));
+    } catch(e) {}
 }
 
 function acilisKarsilastirmaGuncelle(guncelDeger) {
@@ -1668,6 +1677,21 @@ function parseAPIResponse(data) {
     }
 }
 
+    async function tamYenile() {
+    durumGuncelle('loading', 'Yenileniyor...');
+    try {
+        await Promise.all([
+            sunucudanVeriYukle(),   // miktarlar + manuel fiyatlar + sonGuncelleme
+            anlikFiyatlariGetir()   // anlık gram/çeyrek fiyatları
+        ]);
+    } catch (e) {
+        console.warn('Tam yenileme hatası:', e.message);
+    }
+    // ikisi de kendi içinde ekraniGuncelle() çağırıyor,
+    // garanti olsun diye bir kez daha çağırıyoruz
+    ekraniGuncelle();
+}
+    
 function fiyatlariYenile() { anlikFiyatlariGetir(); }
 setInterval(anlikFiyatlariGetir, 600000);
 
@@ -2047,7 +2071,7 @@ document.addEventListener('touchend', function(e) {
     if (document.documentElement.scrollTop === 0 && pullDistance > 100) {
         isRefreshing = true;
         indicator.classList.add('show');
-        fiyatlariYenile();
+        tamYenile();                     // ← değişti
         setTimeout(() => { indicator.classList.remove('show'); isRefreshing = false; }, 3000);
     } else {
         indicator.classList.remove('show');
@@ -2055,16 +2079,14 @@ document.addEventListener('touchend', function(e) {
 }, { passive: true });
 
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) { e.preventDefault(); fiyatlariYenile(); }
+    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) { e.preventDefault(); tamYenile(); } // ← değişti
 });
 
 // ============================================================
 // BAŞLANGIÇ
 // ============================================================
 window.onload = async function() {
-    durumGuncelle('loading', 'Yükleniyor...');
-    await sunucudanVeriYukle();
-    anlikFiyatlariGetir();
+    await tamYenile();
 };
 </script>
 </body>
