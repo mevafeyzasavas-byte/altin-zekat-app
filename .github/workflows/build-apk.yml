@@ -33,6 +33,10 @@ jobs:
         run: npx cap add android
       - name: Sync
         run: npx cap sync android
+      - name: Uygulama İkonunu Oluştur
+        run: |
+          npm install @capacitor/assets --save-dev
+          npx capacitor-assets generate --android
       - name: Network Security Config ekle
         run: |
           mkdir -p android/app/src/main/res/xml
