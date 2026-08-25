@@ -1469,29 +1469,29 @@ function sparklineCiz(verilerArr, renk, yukari) {
 }
 
 const ACILIS_LS_KEY = 'altinAnlikDeger_oncekiAcilis';
-
+let sonHesaplananAnlikDeger = 0; // en son ekrana basılan anlık toplam — bir sonraki refresh'in "önceki" değeri olacak
+    
 function _acilisSnapshotYukle() {
     try { return JSON.parse(localStorage.getItem(ACILIS_LS_KEY)) || null; } catch(e) { return null; }
 }
-const ACILIS_MIN_ARALIK_MS = 0; // referans her refresh'te güncellensin
-    
+
 function _acilisSnapshotKaydet(deger) {
     try {
-        const eskiKayit = _acilisSnapshotYukle();
-        const simdi = Date.now();
-        if (eskiKayit && eskiKayit.zaman && (simdi - eskiKayit.zaman) < ACILIS_MIN_ARALIK_MS) {
-            return;
-        }
-        localStorage.setItem(ACILIS_LS_KEY, JSON.stringify({ deger, zaman: simdi }));
+        localStorage.setItem(ACILIS_LS_KEY, JSON.stringify({ deger, zaman: Date.now() }));
     } catch(e) {}
+}
+
+// Yenileme BAŞLAMADAN ÖNCE çağrılır: o ana kadarki değeri "önceki" olarak dondurur
+function acilisSnapshotOncesiKaydet() {
+    if (sonHesaplananAnlikDeger > 0) {
+        _acilisSnapshotKaydet(sonHesaplananAnlikDeger);
+    }
 }
 
 function acilisKarsilastirmaGuncelle(guncelDeger) {
     if (!guncelDeger || guncelDeger <= 0) return;
 
-    // Önce mevcut referansı oku, SONRA (limitli olarak) yeni snapshot'ı kaydet
-    const onceki = _acilisSnapshotYukle();
-    _acilisSnapshotKaydet(guncelDeger);
+    const onceki = _acilisSnapshotYukle();   // sadece OKU, yazma
 
     const box = document.getElementById('oncekiAcilisBox');
     if (!onceki || !onceki.deger || !box) return;
@@ -1671,18 +1671,17 @@ function parseAPIResponse(data) {
     }
 }
 
-    async function tamYenile() {
+async function tamYenile() {
     durumGuncelle('loading', 'Yenileniyor...');
+    acilisSnapshotOncesiKaydet();   // ← çekme başlamadan ÖNCEKİ değeri dondur
     try {
         await Promise.all([
-            sunucudanVeriYukle(),   // miktarlar + manuel fiyatlar + sonGuncelleme
-            anlikFiyatlariGetir()   // anlık gram/çeyrek fiyatları
+            sunucudanVeriYukle(),
+            anlikFiyatlariGetir()
         ]);
     } catch (e) {
         console.warn('Tam yenileme hatası:', e.message);
     }
-    // ikisi de kendi içinde ekraniGuncelle() çağırıyor,
-    // garanti olsun diye bir kez daha çağırıyoruz
     ekraniGuncelle();
 }
     
@@ -1874,7 +1873,8 @@ function hesaplaToplamlar() {
 
 document.getElementById('nisapTutari').innerText = Math.round(nisapTutari).toLocaleString('tr-TR');
 portfolyoSparklineGuncelle(nisapTutari);
-acilisKarsilastirmaGuncelle(nisapTutari);   // ← eklenen satır
+acilisKarsilastirmaGuncelle(nisapTutari);
+sonHesaplananAnlikDeger = nisapTutari; // bir sonraki refresh'te "önceki" olarak kullanılacak
 
     document.getElementById('nmToplamTutari').innerText = Math.round(nmToplamTutari).toLocaleString('tr-TR');
     document.getElementById('manuelToplamTutari').innerText = `${Math.round(anlıkToplam).toLocaleString('tr-TR')} TL`;
