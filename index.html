@@ -1473,8 +1473,8 @@ const ACILIS_LS_KEY = 'altinAnlikDeger_oncekiAcilis';
 function _acilisSnapshotYukle() {
     try { return JSON.parse(localStorage.getItem(ACILIS_LS_KEY)) || null; } catch(e) { return null; }
 }
-const ACILIS_MIN_ARALIK_MS = 60 * 60 * 1000; // referans en fazla saatte bir güncellensin
-
+const ACILIS_MIN_ARALIK_MS = 0; // referans her refresh'te güncellensin
+    
 function _acilisSnapshotKaydet(deger) {
     try {
         const eskiKayit = _acilisSnapshotYukle();
