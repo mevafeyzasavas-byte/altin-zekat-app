@@ -1535,41 +1535,54 @@ function acilisKarsilastirmaGuncelle(guncelDeger) {
 let sunucuVerisiHazir = false; // sunucudan gerçek miktar başarıyla yüklenene kadar true olmaz
 const SUNUCU_YUKLEME_MAX_DENEME = 5;
 
+function bildirimGoster(mesaj, hata) {
+    let el = document.getElementById('appToast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'appToast';
+        el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:20px;z-index:99999;padding:12px 14px;border-radius:12px;font:600 14px sans-serif;color:#fff;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3);display:none;';
+        document.body.appendChild(el);
+    }
+    el.style.background = hata ? '#c62828' : '#2e7d32';
+    el.textContent = mesaj;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.display = 'none'; }, hata ? 8000 : 2500);
+}
+
 async function sunucudanVeriYukle(deneme) {
     deneme = deneme || 1;
     try {
         const data = await httpGet(VERI_URL + '?t=' + Date.now());
 
-        if (data.status === 'success') {
-            veriler.manuelGramMiktar   = data.gramMiktar    || 98;
-            veriler.manuelCeyrekMiktar = data.ceyrekMiktar  || 14;
-            veriler.nGramMiktar        = data.nGramMiktar   || veriler.manuelGramMiktar;
-            veriler.nCeyrekMiktar      = data.nCeyrekMiktar || veriler.manuelCeyrekMiktar;
-            sunucuVerisiHazir = true; // artık bellekteki değerler güvenilir, kaydetmeye izin ver
-            if (veriler.nGramMiktar !== veriler.manuelGramMiktar || veriler.nCeyrekMiktar !== veriler.manuelCeyrekMiktar) {
-                veriler.nGramMiktar   = veriler.manuelGramMiktar;
-                veriler.nCeyrekMiktar = veriler.manuelCeyrekMiktar;
-                sunucuyaVeriKaydet();
-            }
-            veriler.manuelGramFiyat    = data.manuelGramFiyat   || 0;
-            veriler.manuelCeyrekFiyat  = data.manuelCeyrekFiyat || 0;
-            veriler.sonGuncelleme      = data.sonGuncelleme || null;
+        if (data.status !== 'success') throw new Error(data.message || 'Sunucu hatası');
 
-            const eskiGramFiyat   = parseFloat(data.gramFiyat)   || 0;
-            const eskiCeyrekFiyat = parseFloat(data.ceyrekFiyat) || 0;
-            if (eskiGramFiyat > 0) {
-                const eskiPortfoyDegeri = (veriler.nGramMiktar * eskiGramFiyat) +
-                                          (veriler.nCeyrekMiktar * eskiCeyrekFiyat);
-                if (eskiPortfoyDegeri > 0) {
-                    portfolyoOncekiDeger = eskiPortfoyDegeri;
-                    portfolyoIlkYukleme  = false;
-                }
+        const num = (v, yedek) => { const n = parseFloat(v); return isNaN(n) ? yedek : n; };
+        veriler.manuelGramMiktar   = num(data.gramMiktar,   veriler.manuelGramMiktar);
+        veriler.manuelCeyrekMiktar = num(data.ceyrekMiktar, veriler.manuelCeyrekMiktar);
+        veriler.nGramMiktar        = veriler.manuelGramMiktar;
+        veriler.nCeyrekMiktar      = veriler.manuelCeyrekMiktar;
+        sunucuVerisiHazir = true; // artık bellekteki değerler güvenilir, kaydetmeye izin ver
+        veriler.manuelGramFiyat    = data.manuelGramFiyat   || 0;
+        veriler.manuelCeyrekFiyat  = data.manuelCeyrekFiyat || 0;
+        veriler.sonGuncelleme      = data.sonGuncelleme || null;
+
+        const eskiGramFiyat   = parseFloat(data.gramFiyat)   || 0;
+        const eskiCeyrekFiyat = parseFloat(data.ceyrekFiyat) || 0;
+        if (eskiGramFiyat > 0) {
+            const eskiPortfoyDegeri = (veriler.nGramMiktar * eskiGramFiyat) +
+                                      (veriler.nCeyrekMiktar * eskiCeyrekFiyat);
+            if (eskiPortfoyDegeri > 0) {
+                portfolyoOncekiDeger = eskiPortfoyDegeri;
+                portfolyoIlkYukleme  = false;
             }
         }
     } catch (e) {
         console.warn('Sunucudan veri yüklenemedi (deneme ' + deneme + '):', e.message);
         if (deneme < SUNUCU_YUKLEME_MAX_DENEME) {
             setTimeout(() => sunucudanVeriYukle(deneme + 1), 4000);
+        } else {
+            bildirimGoster('Kayıtlı miktarlar sunucudan alınamadı, ekrandaki değerler GÜNCEL DEĞİL (' + e.message.substring(0, 60) + ')', true);
         }
     }
     ekraniGuncelle();
@@ -1577,8 +1590,9 @@ async function sunucudanVeriYukle(deneme) {
 
 async function sunucuyaVeriKaydet() {
     if (!sunucuVerisiHazir) {
-        console.warn('Sunucu verisi henüz doğrulanmadı, kayıt atlandı (veri kaybını önlemek için).');
-        return;
+        console.warn('Sunucu verisi henüz doğrulanmadı, kayıt atlandı.');
+        bildirimGoster('Sunucu verisi yüklenmediği için KAYDEDİLEMEDİ. Uygulamayı yenileyip tekrar dene.', true);
+        return false;
     }
     try {
         const formData = new URLSearchParams();
@@ -1592,9 +1606,13 @@ async function sunucuyaVeriKaydet() {
         formData.append('manuelCeyrekFiyat', veriler.manuelCeyrekFiyat);
 
         const data = await httpPost(SAVE_URL, formData.toString());
-        if (data.status !== 'success') console.warn('Sunucu kayıt hatası:', data.message);
+        if (data.status !== 'success') throw new Error(data.message || 'Kayıt reddedildi');
+        bildirimGoster('Kaydedildi ✓', false);
+        return true;
     } catch (e) {
         console.warn('Sunucuya kaydedilemedi:', e.message);
+        bildirimGoster('KAYDEDİLEMEDİ: ' + e.message.substring(0, 80), true);
+        return false;
     }
 }
 
