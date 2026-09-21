@@ -12,15 +12,23 @@ exports.handler = async function() {
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false', 'Cache-Control': 'no-cache' }
     });
+    const txt = await res.text();
     if (!res.ok) {
-      const txt = await res.text();
       return {
         statusCode: 502,
         headers: HEADERS,
         body: JSON.stringify({ status: 'error', message: `JSONBin ${res.status}: ${txt.substring(0, 120)}` })
       };
     }
-    const json = await res.json();
+    let json;
+    try { json = JSON.parse(txt); }
+    catch (_) {
+      return {
+        statusCode: 502,
+        headers: HEADERS,
+        body: JSON.stringify({ status: 'error', message: `JSONBin JSON yerine HTML döndü (HTTP ${res.status}): ${txt.substring(0, 100)}` })
+      };
+    }
     const veriler = json.record || json;   // X-Bin-Meta:false ise direkt kayıt gelir
     if (!veriler || typeof veriler.gramMiktar === 'undefined') {
       return { statusCode: 502, headers: HEADERS, body: JSON.stringify({ status: 'error', message: 'Kayıt boş/bozuk' }) };
