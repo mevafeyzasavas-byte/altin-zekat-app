@@ -34,7 +34,7 @@ async function fetchTimeout(url, options, ms) {
 async function miktarlariOku(event) {
   const { getStore, connectLambda } = await import('@netlify/blobs');
   connectLambda(event);
-  const store = getStore({ name: 'altin', consistency: 'strong' });
+  const store = getStore({ name: 'altin' });
   let kayit = await store.get('veriler', { type: 'json' });
   if (!kayit) {
     kayit = ILK_VERI;
