@@ -1,13 +1,23 @@
-const BIN_ID  = process.env.JSONBIN_BIN_ID  || '6a3cfb1bda38895dfefc7ccc';
-const API_KEY = process.env.JSONBIN_API_KEY || '$2a$10$GhDAl4ts887p.JChRGcize.sD0naZdeZzQUWMDHtBBGl31qkX/wWm';
-
+// Veriler artık JSONBin'de değil, Netlify Blobs'ta (aynı sitede, dış servise bağımlılık yok).
 const HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Cache-Control': 'no-store, max-age=0'
 };
 
-// Zaman sınırlı fetch: takılan istek fonksiyonu 30 sn kilitlemesin
+// Blobs boşsa (ilk çalışma) bu değerlerle başlar — JSONBin'deki son kayıt
+const ILK_VERI = {
+  gramMiktar: 71,
+  ceyrekMiktar: 14,
+  nGramMiktar: 71,
+  nCeyrekMiktar: 14,
+  gramFiyat: 6748.77,
+  ceyrekFiyat: 10852.52,
+  manuelGramFiyat: 8000,
+  manuelCeyrekFiyat: 12500,
+  sonGuncelleme: '2026-09-21T07:56:22.642Z'
+};
+
 async function fetchTimeout(url, options, ms) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
@@ -21,19 +31,15 @@ async function fetchTimeout(url, options, ms) {
   }
 }
 
-async function miktarlariOku() {
-  const res = await fetchTimeout(
-    `https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,
-    { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } },
-    8000
-  );
-  const txt = await res.text();
-  if (!res.ok) throw new Error(`JSONBin ${res.status}: ${txt.substring(0, 120)}`);
-  let json;
-  try { json = JSON.parse(txt); }
-  catch (_) { throw new Error(`JSONBin JSON yerine HTML döndü (HTTP ${res.status}): ${txt.substring(0, 100)}`); }
-  const kayit = json.record || json;
-  if (!kayit || typeof kayit.gramMiktar === 'undefined') throw new Error('JSONBin kaydı boş/bozuk');
+async function miktarlariOku(event) {
+  const { getStore, connectLambda } = await import('@netlify/blobs');
+  connectLambda(event);
+  const store = getStore({ name: 'altin', consistency: 'strong' });
+  let kayit = await store.get('veriler', { type: 'json' });
+  if (!kayit) {
+    kayit = ILK_VERI;
+    await store.setJSON('veriler', kayit);
+  }
   return kayit;
 }
 
@@ -56,19 +62,18 @@ async function fiyatlariOku() {
   return { gram, ceyrek };
 }
 
-exports.handler = async function() {
-  // İkisi paralel çalışır; fiyat başarısız olsa bile miktarlar dönmeli
-  const [miktar, fiyat] = await Promise.allSettled([miktarlariOku(), fiyatlariOku()]);
+exports.handler = async function(event) {
+  const [miktar, fiyat] = await Promise.allSettled([miktarlariOku(event), fiyatlariOku()]);
 
   if (miktar.status !== 'fulfilled') {
     return {
       statusCode: 502,
       headers: HEADERS,
-      body: JSON.stringify({ status: 'error', message: miktar.reason.message })
+      body: JSON.stringify({ status: 'error', message: 'Depo hatası: ' + miktar.reason.message })
     };
   }
 
-  const veriler = miktar.value;
+  const veriler = { ...miktar.value };
   if (fiyat.status === 'fulfilled') {
     veriler.gramFiyatCanli = fiyat.value.gram;
     veriler.ceyrekFiyatCanli = fiyat.value.ceyrek;
