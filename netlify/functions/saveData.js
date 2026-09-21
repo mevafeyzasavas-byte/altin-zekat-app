@@ -35,11 +35,22 @@ exports.handler = async function(event) {
       sonGuncelleme:     new Date().toISOString()
     };
 
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify(veriler)
-    });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    let res;
+    try {
+      res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(veriler),
+        signal: ctrl.signal
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error('JSONBin 8 sn içinde cevap vermedi');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
 
     // ESKİ HATA: JSONBin cevabı kontrol edilmiyordu, PUT başarısız olsa bile "success" dönüyordu.
     if (!res.ok) {

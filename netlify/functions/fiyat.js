@@ -1,11 +1,15 @@
 exports.handler = async function(event, context) {
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     const response = await fetch('https://static.altinkaynak.com/Store_Gold_2', {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0'
-      }
+      },
+      signal: ctrl.signal
     });
+    clearTimeout(timer);
     const json = await response.json();
     
     let gram = null, ceyrek = null;
