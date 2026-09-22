@@ -1592,7 +1592,11 @@ async function sunucudanVeriYukle(deneme) {
 // için kullanılır — kullanıcı bir şey yapmadığından bildirim gösterilmez.
 // sessiz=false (varsayılan): kullanıcının bilerek tetiklediği kayıtlar (miktar/fiyat
 // güncelleme) için kullanılır — sonuç kısa ve net şekilde bildirilir.
-async function sunucuyaVeriKaydet(sessiz) {
+// sadeceFiyat=true: bu cihazın belleğindeki miktar alanları BAŞKA bir cihaz/sekmede
+// az önce güncellenmiş olabileceğinden (bayat veri), otomatik fiyat-senkron kaydında
+// miktar alanları hiç gönderilmez — sunucu (saveData.js) alan gelmeyince kendi güncel
+// değerini korur, böylece hiçbir cihaz diğerinin miktarını sessizce ezemez.
+async function sunucuyaVeriKaydet(sessiz, sadeceFiyat) {
     if (!sunucuVerisiHazir) {
         console.warn('Sunucu verisi henüz doğrulanmadı, kayıt atlandı.');
         if (!sessiz) bildirimGoster('KAYDEDİLEMEDİ', true);
@@ -1600,10 +1604,12 @@ async function sunucuyaVeriKaydet(sessiz) {
     }
     try {
         const formData = new URLSearchParams();
-        formData.append('gramMiktar',        veriler.manuelGramMiktar);
-        formData.append('ceyrekMiktar',      veriler.manuelCeyrekMiktar);
-        formData.append('nGramMiktar',       veriler.nGramMiktar);
-        formData.append('nCeyrekMiktar',     veriler.nCeyrekMiktar);
+        if (!sadeceFiyat) {
+            formData.append('gramMiktar',    veriler.manuelGramMiktar);
+            formData.append('ceyrekMiktar',  veriler.manuelCeyrekMiktar);
+            formData.append('nGramMiktar',   veriler.nGramMiktar);
+            formData.append('nCeyrekMiktar', veriler.nCeyrekMiktar);
+        }
         formData.append('gramFiyat',         veriler.anlıkGramAlisFiyat);
         formData.append('ceyrekFiyat',       veriler.anlıkCeyrekAlisFiyat);
         formData.append('manuelGramFiyat',   veriler.manuelGramFiyat);
@@ -1679,7 +1685,7 @@ function parseAPIResponse(data) {
             if (data.ceyrek?.satis) veriler.anlıkCeyrekSatisFiyat = parseFiyat(data.ceyrek.satis);
             else if (veriler.anlıkGramSatisFiyat > 0) veriler.anlıkCeyrekSatisFiyat = veriler.anlıkGramSatisFiyat * 1.75;
 
-            sunucuyaVeriKaydet(true); // otomatik fiyat yenileme — sessiz, kullanıcıya bildirim gösterme
+            sunucuyaVeriKaydet(true, true); // otomatik fiyat yenileme — sessiz VE sadece fiyat, miktarı ezme
             ekraniGuncelle();
 
             const saat = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
