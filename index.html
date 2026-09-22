@@ -1877,6 +1877,18 @@ function ekraniGuncelle() {
     }
 
     hesaplaToplamlar();
+    _ekraniZorlaYenidenCiz();
+}
+
+// WebView'de (özellikle Android) DOM değeri değişse de ekran bazen anında
+// yeniden boyanmıyor; kullanıcı kaydırana kadar eski değer görünüyor.
+// Bu, tarayıcıya küçük bir "reflow/repaint" zorlaması yaparak o gecikmeyi giderir.
+function _ekraniZorlaYenidenCiz() {
+    requestAnimationFrame(() => {
+        void document.body.offsetHeight; // reflow'u zorla
+        window.scrollBy(0, 1);
+        window.scrollBy(0, -1);
+    });
 }
 
 function hesaplaToplamlar() {
