@@ -34,10 +34,7 @@ async function fetchTimeout(url, options, ms) {
 async function miktarlariOku(event) {
   const { getStore, connectLambda } = await import('@netlify/blobs');
   connectLambda(event);
-  // consistency: 'strong' -> az önce kaydedilen veriyi garanti şekilde okur.
-  // Varsayılan ('eventual') bazı okumalarda kısa süreliğine eski veriyi
-  // döndürebiliyordu; miktarların "bazen eski bazen yeni" görünmesinin sebebi buydu.
-  const store = getStore({ name: 'altin', consistency: 'strong' });
+  const store = getStore({ name: 'altin' });
   let kayit = await store.get('veriler', { type: 'json' });
   if (!kayit) {
     kayit = ILK_VERI;

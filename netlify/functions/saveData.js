@@ -34,7 +34,7 @@ exports.handler = async function(event) {
 
     const { getStore, connectLambda } = await import('@netlify/blobs');
     connectLambda(event);
-    const store = getStore({ name: 'altin', consistency: 'strong' });
+    const store = getStore({ name: 'altin' });
     await store.setJSON('veriler', veriler);
 
     return {
