@@ -1588,10 +1588,14 @@ async function sunucudanVeriYukle(deneme) {
     ekraniGuncelle();
 }
 
-async function sunucuyaVeriKaydet() {
+// sessiz=true: arka planda otomatik tetiklenen kayıtlar (örn. canlı fiyat çekildiğinde)
+// için kullanılır — kullanıcı bir şey yapmadığından bildirim gösterilmez.
+// sessiz=false (varsayılan): kullanıcının bilerek tetiklediği kayıtlar (miktar/fiyat
+// güncelleme) için kullanılır — sonuç kısa ve net şekilde bildirilir.
+async function sunucuyaVeriKaydet(sessiz) {
     if (!sunucuVerisiHazir) {
         console.warn('Sunucu verisi henüz doğrulanmadı, kayıt atlandı.');
-        bildirimGoster('Sunucu verisi yüklenmediği için KAYDEDİLEMEDİ. Uygulamayı yenileyip tekrar dene.', true);
+        if (!sessiz) bildirimGoster('KAYDEDİLEMEDİ', true);
         return false;
     }
     try {
@@ -1607,11 +1611,11 @@ async function sunucuyaVeriKaydet() {
 
         const data = await httpPost(SAVE_URL, formData.toString());
         if (data.status !== 'success') throw new Error(data.message || 'Kayıt reddedildi');
-        bildirimGoster('Kaydedildi ✓', false);
+        if (!sessiz) bildirimGoster('Kaydedildi ✓', false);
         return true;
     } catch (e) {
         console.warn('Sunucuya kaydedilemedi:', e.message);
-        bildirimGoster('KAYDEDİLEMEDİ: ' + e.message.substring(0, 80), true);
+        if (!sessiz) bildirimGoster('KAYDEDİLEMEDİ', true);
         return false;
     }
 }
@@ -1675,7 +1679,7 @@ function parseAPIResponse(data) {
             if (data.ceyrek?.satis) veriler.anlıkCeyrekSatisFiyat = parseFiyat(data.ceyrek.satis);
             else if (veriler.anlıkGramSatisFiyat > 0) veriler.anlıkCeyrekSatisFiyat = veriler.anlıkGramSatisFiyat * 1.75;
 
-            sunucuyaVeriKaydet();
+            sunucuyaVeriKaydet(true); // otomatik fiyat yenileme — sessiz, kullanıcıya bildirim gösterme
             ekraniGuncelle();
 
             const saat = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
