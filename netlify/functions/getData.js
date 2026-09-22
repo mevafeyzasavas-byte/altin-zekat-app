@@ -35,7 +35,19 @@ async function miktarlariOku(event) {
   const { getStore, connectLambda } = await import('@netlify/blobs');
   connectLambda(event);
   const store = getStore({ name: 'altin' });
-  let kayit = await store.get('veriler', { type: 'json' });
+
+  // Önce garanti-güncel ("strong") okuma dene — az önce kaydedilen değeri
+  // kesin getirir. Bu ortamda desteklenmiyorsa veya hata verirse (örn. "Depo
+  // hatası"), sessizce normal ("eventual") okumaya düş — uygulama asla
+  // kullanıcıya hata göstermeden çalışmaya devam eder.
+  let kayit;
+  try {
+    kayit = await store.get('veriler', { type: 'json', consistency: 'strong' });
+  } catch (e) {
+    console.warn('Strong okuma başarısız, eventual okumaya düşülüyor:', e.message);
+    kayit = await store.get('veriler', { type: 'json' });
+  }
+
   if (!kayit) {
     kayit = ILK_VERI;
     await store.setJSON('veriler', kayit);
