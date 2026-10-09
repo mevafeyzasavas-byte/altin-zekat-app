@@ -1535,6 +1535,27 @@ function acilisKarsilastirmaGuncelle(guncelDeger) {
 let sunucuVerisiHazir = false; // sunucudan gerçek miktar başarıyla yüklenene kadar true olmaz
 const SUNUCU_YUKLEME_MAX_DENEME = 5;
 
+// ---- Yerel son-kayıt (anında doğru miktar için) ----------------------------
+// Miktar kaydedilince önce bu cihaza yazılır. Sunucu yanıtı gecikirse / kayıt henüz
+// sunucuya ulaşmadan uygulama kapanırsa / sunucu eski veri okursa, bu kayıt kullanılır.
+const LS_SON_KAYIT = 'altinSonMiktarKaydi';
+function sonKayitOku() { try { return JSON.parse(localStorage.getItem(LS_SON_KAYIT) || 'null'); } catch (e) { return null; } }
+function sonKayitYaz(o) { try { localStorage.setItem(LS_SON_KAYIT, JSON.stringify(o)); } catch (e) {} }
+function yerelKaydiUygula(data) {
+    const k = sonKayitOku();
+    if (!k || typeof k.g !== 'number' || typeof k.c !== 'number') return;
+    const yas = Date.now() - k.t;
+    // sunucuya ulaşmamış kayıt: 30 dk; ulaşmış ama okuma gecikmesi ihtimali: 2 dk
+    if (yas > (k.onay ? 120000 : 1800000)) return;
+    const sunucuT = Date.parse(data.sonGuncelleme) || 0;
+    if (sunucuT > k.t) return; // başka cihazdan daha yeni kayıt var, sunucu kazansın
+    veriler.manuelGramMiktar   = k.g;
+    veriler.manuelCeyrekMiktar = k.c;
+    veriler.nGramMiktar        = k.g;
+    veriler.nCeyrekMiktar      = k.c;
+    if (!k.onay) sunucuyaVeriKaydet(true); // sunucuya ulaşmamıştı, tekrar gönder
+}
+
 function bildirimGoster(mesaj, hata) {
     let el = document.getElementById('appToast');
     if (!el) {
@@ -1563,6 +1584,8 @@ async function sunucudanVeriYukle(deneme) {
         veriler.nGramMiktar        = veriler.manuelGramMiktar;
         veriler.nCeyrekMiktar      = veriler.manuelCeyrekMiktar;
         sunucuVerisiHazir = true; // artık bellekteki değerler güvenilir, kaydetmeye izin ver
+        if (data.okumaTuru === 'eventual') console.warn('Sunucu okuması gecikmeli (eventual) modda, yerel kayıt devrede.');
+        yerelKaydiUygula(data);
         veriler.manuelGramFiyat    = data.manuelGramFiyat   || 0;
         veriler.manuelCeyrekFiyat  = data.manuelCeyrekFiyat || 0;
         veriler.sonGuncelleme      = data.sonGuncelleme || null;
@@ -1602,6 +1625,11 @@ async function sunucuyaVeriKaydet(sessiz, sadeceFiyat) {
         if (!sessiz) bildirimGoster('KAYDEDİLEMEDİ', true);
         return false;
     }
+    let kayitT = 0;
+    if (!sadeceFiyat) { // miktar kaydı: ağ cevabını beklemeden ÖNCE bu cihaza yaz
+        kayitT = Date.now();
+        sonKayitYaz({ g: veriler.manuelGramMiktar, c: veriler.manuelCeyrekMiktar, t: kayitT, onay: false });
+    }
     try {
         const formData = new URLSearchParams();
         if (!sadeceFiyat) {
@@ -1617,6 +1645,10 @@ async function sunucuyaVeriKaydet(sessiz, sadeceFiyat) {
 
         const data = await httpPost(SAVE_URL, formData.toString());
         if (data.status !== 'success') throw new Error(data.message || 'Kayıt reddedildi');
+        if (!sadeceFiyat) {
+            const k = sonKayitOku();
+            if (k && k.t === kayitT) { k.onay = true; sonKayitYaz(k); }
+        }
         if (!sessiz) bildirimGoster('Kaydedildi ✓', false);
         return true;
     } catch (e) {
