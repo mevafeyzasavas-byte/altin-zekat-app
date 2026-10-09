@@ -42,11 +42,13 @@ async function miktarlariOku(event) {
   // kullanıcıya hata göstermeden çalışmaya devam eder.
   let kayit;
   let okumaTuru = 'strong';
+  let okumaHata = null;
   try {
     kayit = await store.get('veriler', { type: 'json', consistency: 'strong' });
   } catch (e) {
     console.warn('Strong okuma başarısız, eventual okumaya düşülüyor:', e.message);
     okumaTuru = 'eventual'; // bu modda yeni kayıt 60 sn'ye kadar görünmeyebilir
+    okumaHata = (e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e));
     kayit = await store.get('veriler', { type: 'json' });
   }
 
@@ -62,7 +64,9 @@ async function miktarlariOku(event) {
       kayit = { ...kayit, gramFiyat: f.gramFiyat, ceyrekFiyat: f.ceyrekFiyat };
     }
   } catch (e) { /* fiyatlar yoksa/okunamazsa sessizce geç */ }
-  return { ...kayit, okumaTuru };
+  const sonuc = { ...kayit, okumaTuru };
+  if (okumaHata) sonuc.okumaHata = okumaHata;
+  return sonuc;
 }
 
 async function fiyatlariOku() {
