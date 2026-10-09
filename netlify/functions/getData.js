@@ -41,10 +41,12 @@ async function miktarlariOku(event) {
   // hatası"), sessizce normal ("eventual") okumaya düş — uygulama asla
   // kullanıcıya hata göstermeden çalışmaya devam eder.
   let kayit;
+  let okumaTuru = 'strong';
   try {
     kayit = await store.get('veriler', { type: 'json', consistency: 'strong' });
   } catch (e) {
     console.warn('Strong okuma başarısız, eventual okumaya düşülüyor:', e.message);
+    okumaTuru = 'eventual'; // bu modda yeni kayıt 60 sn'ye kadar görünmeyebilir
     kayit = await store.get('veriler', { type: 'json' });
   }
 
@@ -60,7 +62,7 @@ async function miktarlariOku(event) {
       kayit = { ...kayit, gramFiyat: f.gramFiyat, ceyrekFiyat: f.ceyrekFiyat };
     }
   } catch (e) { /* fiyatlar yoksa/okunamazsa sessizce geç */ }
-  return kayit;
+  return { ...kayit, okumaTuru };
 }
 
 async function fiyatlariOku() {
