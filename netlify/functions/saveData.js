@@ -20,22 +20,35 @@ exports.handler = async function(event) {
   try {
     const params = new URLSearchParams(event.body);
     const num = (k, d) => { const n = parseFloat(params.get(k)); return isNaN(n) ? d : n; };
-    const veriler = {
-      gramMiktar:        num('gramMiktar', 71),
-      ceyrekMiktar:      num('ceyrekMiktar', 14),
-      nGramMiktar:       num('nGramMiktar', 71),
-      nCeyrekMiktar:     num('nCeyrekMiktar', 14),
-      gramFiyat:         num('gramFiyat', 0),
-      ceyrekFiyat:       num('ceyrekFiyat', 0),
-      manuelGramFiyat:   num('manuelGramFiyat', 0),
-      manuelCeyrekFiyat: num('manuelCeyrekFiyat', 0),
-      sonGuncelleme:     new Date().toISOString()
-    };
+    const sonGuncelleme = new Date().toISOString();
 
     const { getStore, connectLambda } = await import('@netlify/blobs');
     connectLambda(event);
     const store = getStore({ name: 'altin' });
-    await store.setJSON('veriler', veriler);
+
+    // Miktar alanları geldiyse: tam kayıt. Gelmediyse (otomatik fiyat senkronu):
+    // miktarlara DOKUNMA — ayrı 'fiyatlar' anahtarına yaz. (Eskiden eksik alanlar
+    // varsayılan 71/14 ile yazılıp kaydedilen miktarı eziyordu.)
+    const veriler = { sonGuncelleme };
+    if (params.has('gramMiktar') || params.has('ceyrekMiktar')) {
+      Object.assign(veriler, {
+        gramMiktar:        num('gramMiktar', 71),
+        ceyrekMiktar:      num('ceyrekMiktar', 14),
+        nGramMiktar:       num('nGramMiktar', 71),
+        nCeyrekMiktar:     num('nCeyrekMiktar', 14),
+        gramFiyat:         num('gramFiyat', 0),
+        ceyrekFiyat:       num('ceyrekFiyat', 0),
+        manuelGramFiyat:   num('manuelGramFiyat', 0),
+        manuelCeyrekFiyat: num('manuelCeyrekFiyat', 0)
+      });
+      await store.setJSON('veriler', veriler);
+    } else {
+      Object.assign(veriler, {
+        gramFiyat:   num('gramFiyat', 0),
+        ceyrekFiyat: num('ceyrekFiyat', 0)
+      });
+      await store.setJSON('fiyatlar', veriler);
+    }
 
     return {
       statusCode: 200,

@@ -52,6 +52,14 @@ async function miktarlariOku(event) {
     kayit = ILK_VERI;
     await store.setJSON('veriler', kayit);
   }
+
+  // Fiyat-only kayıt (otomatik senkron) daha yeniyse sadece fiyatları üstüne bindir
+  try {
+    const f = await store.get('fiyatlar', { type: 'json' });
+    if (f && f.sonGuncelleme > (kayit.sonGuncelleme || '')) {
+      kayit = { ...kayit, gramFiyat: f.gramFiyat, ceyrekFiyat: f.ceyrekFiyat };
+    }
+  } catch (e) { /* fiyatlar yoksa/okunamazsa sessizce geç */ }
   return kayit;
 }
 
